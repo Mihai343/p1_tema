@@ -1,59 +1,59 @@
-//import libraria principala polyglot din graalvm
 import org.graalvm.polyglot.*;
-import java.util.*;
-
-//clasa principala - aplicatie JAVA
 class Polyglot {
 
-    private static void afisare(Vector<Integer> arr) {
-        Context polyglot = Context.newBuilder().allowAllAccess(true).build();
 
-        polyglot.eval("js", "console.log('" + arr + "')");
-        polyglot.close();
-    }
-
-    private static String cut(Vector<Integer> arr){
-        Context polyglot = Context.newBuilder().allowAllAccess(true).build();
-
-        int nr1 = arr.size();
-
-        String str = arr.toString();
-        String str2 = str.replace('[',' ');
-        String str3 = str2.replace(']',' ');
-        //System.out.println(str3);
-        Value arr2 = polyglot.eval("R","mean(c("+str3+"),trim = 0.2, na.rm = TRUE)");
-        String x = arr2.toString();
-
-
-        polyglot.close();
-        return x;
-    }
-
-
-    private static Vector<Integer> Create(){
+    private static int SumCRC(String token) {
         //construim un context care ne permite sa folosim elemente din PYTHON
         Context polyglot = Context.newBuilder().allowAllAccess(true).build();
-        Value arr = polyglot.eval("python","import random; [random.randint(-100, 100) for _ in range(20)]");
-
-
-        Vector<Integer> x = new Vector<Integer>();
-        for(int i = 0; i < arr.getArraySize(); i++){
-            x.add(arr.getArrayElement(i).asInt());
-        }
-
+        //folosim o variabila generica care va captura rezultatul excutiei functiei PYTHON, sum()
+        //avem voie sa inlocuim anumite elemente din scriptul pe care il construim spre evaluare, aici token provine din JAVA, dar va fi interpretat de PYTHON
+        Value result = polyglot.eval("python", "sum(ord(ch) for ch in '" + token + "')");
+        //utilizam metoda asInt() din variabila incarcata cu output-ul executiei, pentru a mapa valoarea generica la un Int
+        int resultInt = result.asInt();
+        // inchidem contextul Polyglot
         polyglot.close();
-        return x;
 
+        return resultInt;
     }
 
     public static void main(String[] args) {
 
+        Context polyglot = Context.create();
+        Value v = polyglot.eval("js", "[\"IF\",\"JE\",\"This\",\"Run\",\"This\"];");
+        long nr= v.getArraySize(); //castare in long
+        int n = (int) nr;
+        boolean[] v2 = new boolean[n];
+        for (int i = 0; i < n; i++) {
+            v2[i] = false;
+        } //sau Arrays.fill
 
-        Vector<Integer> arr = Polyglot.Create();
-        //System.out.println(arr);
-        Polyglot.afisare(arr);
-        System.out.println(Polyglot.cut(arr));
+        int[] v3 = new int[n];
 
-        //polyglot.close();
+        for (int i = 0; i < v.getArraySize(); i++) {
+            String element = v.getArrayElement(i).asString();
+            int crc = SumCRC(element);
+            v3[i] = crc;
+            System.out.println(element + " -> " + crc);
+        }
+
+//        for (int i = 0; i < n; i++) {
+//            System.out.println(array3[i]);
+//        }
+
+        for (int i = 0; i < n; i++) {
+            if (v2[i] == false) {
+
+                System.out.println("Suma control " + v3[i] + ":");
+
+                for (int j = i; j < n; j++) {
+                    if (v3[j] == v3[i]) {
+                        System.out.printf("%s ", v.getArrayElement(j).asString());
+                        v2[j] = true;
+                    }
+                }
+                System.out.println();
+            }
+        }
+        polyglot.close();
     }
 }
